@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cascade-analytics/cascade/services/writer/internal/schema"
@@ -106,6 +107,13 @@ func (c *StreamConsumer) Run(ctx context.Context) error {
 			if ctx.Err() != nil {
 				return flush()
 			}
+			// Recreate the group if the stream or group was deleted.
+			if isNoGroup(err) {
+				if egErr := c.EnsureGroup(ctx); egErr != nil {
+					return fmt.Errorf("re-create group after NOGROUP: %w", egErr)
+				}
+				continue
+			}
 			return fmt.Errorf("xreadgroup: %w", err)
 		}
 
@@ -130,4 +138,8 @@ func (c *StreamConsumer) Run(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func isNoGroup(err error) bool {
+	return strings.Contains(err.Error(), "NOGROUP")
 }

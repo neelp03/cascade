@@ -41,9 +41,14 @@ QUERY_HEALTH=$(curl -sf "$QUERY_URL/health" | json_field status)
 # ── 2. Baseline count ────────────────────────────────────────────────────────
 echo ""
 echo "--- Baseline count"
-FROM=$(date -u -d "1 hour ago" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
-     || date -u -v-1H +"%Y-%m-%dT%H:%M:%SZ")
-TO=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+# Anchor all timestamps to a single captured second so events always land within the query window.
+NOW_EPOCH=$(date -u +%s)
+TS=$(date -u -d "@${NOW_EPOCH}" +"%Y-%m-%dT%H:%M:%S.000Z" 2>/dev/null \
+   || date -u -r "${NOW_EPOCH}" +"%Y-%m-%dT%H:%M:%S.000Z")
+FROM=$(date -u -d "@$((NOW_EPOCH - 3600))" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
+     || date -u -r "$((NOW_EPOCH - 3600))" +"%Y-%m-%dT%H:%M:%SZ")
+TO=$(date -u -d "@$((NOW_EPOCH + 300))" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
+   || date -u -r "$((NOW_EPOCH + 300))" +"%Y-%m-%dT%H:%M:%SZ")
 
 BASELINE=$(curl -sf \
   -H "X-Tenant-ID: $TENANT_ID" \
@@ -55,7 +60,6 @@ pass "baseline count = $BASELINE"
 # ── 3. Send batch of events ──────────────────────────────────────────────────
 echo ""
 echo "--- Sending $N_EVENTS events"
-TS=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
 
 BATCH_RESPONSE=$(python3 -c "
 import json, urllib.request

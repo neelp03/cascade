@@ -42,12 +42,12 @@ func (s *ClickHouseStore) CountEvents(
 		FROM events
 		WHERE tenant_id = {tenant_id:String}
 		  AND event      = {event:String}
-		  AND timestamp >= {from:DateTime64}
-		  AND timestamp <  {to:DateTime64}
+		  AND timestamp >= toDateTime64({from:Int64}, 3, 'UTC')
+		  AND timestamp <  toDateTime64({to:Int64}, 3, 'UTC')
 	`, clickhouse.Named("tenant_id", tenantID),
 		clickhouse.Named("event", event),
-		clickhouse.Named("from", from),
-		clickhouse.Named("to", to),
+		clickhouse.Named("from", from.Unix()),
+		clickhouse.Named("to", to.Unix()),
 	).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("count query: %w", err)
@@ -84,8 +84,8 @@ func (s *ClickHouseStore) TimeSeries(
 		FROM events
 		WHERE tenant_id = {tenant_id:String}
 		  AND event      = {event:String}
-		  AND timestamp >= {from:DateTime64}
-		  AND timestamp <  {to:DateTime64}
+		  AND timestamp >= toDateTime64({from:Int64}, 3, 'UTC')
+		  AND timestamp <  toDateTime64({to:Int64}, 3, 'UTC')
 		GROUP BY ts
 		ORDER BY ts
 	`, truncFn)
@@ -93,8 +93,8 @@ func (s *ClickHouseStore) TimeSeries(
 	rows, err := s.conn.Query(ctx, query,
 		clickhouse.Named("tenant_id", tenantID),
 		clickhouse.Named("event", event),
-		clickhouse.Named("from", from),
-		clickhouse.Named("to", to),
+		clickhouse.Named("from", from.Unix()),
+		clickhouse.Named("to", to.Unix()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("timeseries query: %w", err)

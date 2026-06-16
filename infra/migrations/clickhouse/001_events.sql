@@ -16,25 +16,3 @@ PARTITION BY (tenant_id, toYYYYMM(timestamp))
 ORDER BY (tenant_id, event, timestamp, event_id)
 TTL toDateTime(timestamp) + INTERVAL 1 YEAR
 SETTINGS index_granularity = 8192;
-
--- Materialized view: per-minute event counts for fast time-series queries
-CREATE TABLE IF NOT EXISTS events_counts_1m
-(
-    tenant_id   String,
-    event       LowCardinality(String),
-    minute      DateTime,
-    count       UInt64
-)
-ENGINE = SummingMergeTree
-ORDER BY (tenant_id, event, minute);
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS mv_events_counts_1m
-TO events_counts_1m
-AS
-SELECT
-    tenant_id,
-    event,
-    toStartOfMinute(timestamp) AS minute,
-    count() AS count
-FROM events
-GROUP BY tenant_id, event, minute;
