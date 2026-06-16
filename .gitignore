@@ -1,0 +1,34 @@
+# Node
+node_modules/
+dist/
+.next/
+.nuxt/
+*.tsbuildinfo
+
+# Go
+*.exe
+*.test
+*.out
+vendor/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+/tmp/
+/build/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Infra data dirs (local dev volumes)
+infra/data/

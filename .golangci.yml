@@ -1,0 +1,28 @@
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+
+linters-settings:
+  gofmt:
+    simplify: true
+  revive:
+    rules:
+      - name: exported
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+issues:
+  exclude-rules:
+    - path: "_test\\.go"
+      linters: [errcheck]

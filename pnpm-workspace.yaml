@@ -1,0 +1,6 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "services/realtime"
+  - "services/app-api"
+  - "services/auth"
