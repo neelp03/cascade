@@ -1,9 +1,11 @@
 FROM golang:1.23-alpine AS builder
+# git is required by go mod for VCS-based module resolution
+RUN apk add --no-cache git
 WORKDIR /app
-# Copy everything first so go mod tidy can scan imports
+ENV GONOSUMDB=*
 COPY go.mod ./
 COPY . .
-RUN go mod tidy && go mod download
+RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /ingest ./cmd/main.go
 
 FROM alpine:3.20
