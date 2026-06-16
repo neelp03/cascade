@@ -5,6 +5,12 @@ dist/
 .nuxt/
 *.tsbuildinfo
 
+# TS build output emitted alongside source (packages/types compiles in-place)
+packages/types/src/*.js
+packages/types/src/*.js.map
+packages/types/src/*.d.ts
+packages/types/src/*.d.ts.map
+
 # Go
 *.exe
 *.test
