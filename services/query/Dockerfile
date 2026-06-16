@@ -7,7 +7,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /query ./cmd/main.go
 
 FROM alpine:3.20
-RUN apk add --no-cache ca-certificates wget
+RUN apk add --no-cache ca-certificates curl
 COPY --from=builder /query /query
 EXPOSE 8081
 ENTRYPOINT ["/query"]

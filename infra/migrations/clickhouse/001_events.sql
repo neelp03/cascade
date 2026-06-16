@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS events
 ENGINE = MergeTree
 PARTITION BY (tenant_id, toYYYYMM(timestamp))
 ORDER BY (tenant_id, event, timestamp, event_id)
-TTL timestamp + INTERVAL 1 YEAR
+TTL toDateTime(timestamp) + INTERVAL 1 YEAR
 SETTINGS index_granularity = 8192;
 
 -- Materialized view: per-minute event counts for fast time-series queries

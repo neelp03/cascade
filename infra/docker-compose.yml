@@ -21,13 +21,14 @@ services:
     volumes:
       - clickhouse-data:/var/lib/clickhouse
       - ./clickhouse/config.xml:/etc/clickhouse-server/config.d/cascade.xml:ro
-      - ./clickhouse/users.d:/etc/clickhouse-server/users.d:ro
+      - ./clickhouse/users.d/cascade_profile.xml:/etc/clickhouse-server/users.d/cascade_profile.xml:ro
       - ./migrations/clickhouse:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8123/ping || exit 1"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 15
+      start_period: 15s
     logging: *default-logging
 
   postgres:
@@ -47,6 +48,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 5s
     logging: *default-logging
 
   redis:
@@ -62,6 +64,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 5s
     logging: *default-logging
 
   # ── Services (M1 slice) ──────────────────────────────────────────────────────
@@ -78,15 +81,15 @@ services:
       REDIS_URL: "redis://redis:6379"
       REDIS_STREAM: "ingest:stream"
       LOG_LEVEL: "info"
-      # TENANT_ID header required on every request; auth middleware stubs this in M1
     depends_on:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
     logging: *default-logging
 
   writer:
@@ -128,10 +131,11 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost:8081/health"]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
     logging: *default-logging
 
   dashboard:
