@@ -88,6 +88,20 @@ jobs:
       - name: Start services
         run: docker compose -f infra/docker-compose.yml up -d --build
 
+      - name: Wait for ClickHouse migrations
+        run: |
+          # docker-compose's healthcheck only confirms ClickHouse is reachable
+          # (/ping) -- the entrypoint runs docker-entrypoint-initdb.d *after* the
+          # server starts accepting connections, so `events` may not exist yet
+          # even once the container reports healthy. Poll for the table directly.
+          for i in $(seq 1 30); do
+            docker exec cascade-clickhouse clickhouse-client \
+              --user cascade --password cascade --database cascade \
+              --query "EXISTS TABLE events" 2>/dev/null | grep -q '^1$' && break
+            echo "Waiting for ClickHouse migrations ($i/30)..."
+            sleep 2
+          done
+
       - name: Wait for ingest and query
         run: |
           for i in $(seq 1 30); do
