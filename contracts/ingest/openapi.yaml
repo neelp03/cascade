@@ -1,0 +1,167 @@
+openapi: "3.1.0"
+info:
+  title: Cascade Ingest API
+  version: "1.0.0"
+  description: |
+    High-throughput event ingestion endpoint. Enqueues validated events to
+    Redis Streams for async write to ClickHouse. Returns 202 immediately.
+
+servers:
+  - url: http://localhost:8080
+    description: Local dev
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /v1/capture:
+    post:
+      summary: Capture a single event
+      operationId: captureEvent
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureEventRequest"
+      responses:
+        "202":
+          description: Event accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/batch:
+    post:
+      summary: Capture a batch of events (used by JS SDK)
+      operationId: captureBatch
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchCaptureRequest"
+      responses:
+        "202":
+          description: Batch accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchCaptureResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  parameters:
+    TenantID:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      description: |
+        Identifies the tenant. In M1 this is a plain header. A5 (Auth) will
+        replace this with JWT-derived tenant context in M4.
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CaptureEventRequest:
+      type: object
+      required: [event, timestamp, distinct_id]
+      properties:
+        event:
+          type: string
+          example: page_view
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-06-15T10:00:00.000Z"
+        distinct_id:
+          type: string
+          example: user_abc123
+        properties:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+
+    BatchCaptureRequest:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/CaptureEventRequest"
+
+    CaptureResponse:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+
+    BatchCaptureResponse:
+      type: object
+      properties:
+        accepted:
+          type: integer
+        event_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        redis:
+          type: string
+          enum: [ok, error]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request body
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Missing or invalid X-Tenant-ID header
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

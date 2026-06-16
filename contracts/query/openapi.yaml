@@ -1,0 +1,244 @@
+openapi: "3.1.0"
+info:
+  title: Cascade Query API
+  version: "1.0.0"
+  description: |
+    Analytical query API over ClickHouse. Results are cached in Redis.
+    This is the highest-traffic interface — A3 (Dashboard) mocks this until A2 is live.
+
+servers:
+  - url: http://localhost:8081
+    description: Local dev
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /v1/count:
+    get:
+      summary: Count events in a time range
+      operationId: countEvents
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+        - name: event
+          in: query
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: Event count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/timeseries:
+    get:
+      summary: Time-series event counts
+      operationId: timeSeries
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+        - name: event
+          in: query
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - name: interval
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [minute, hour, day]
+        - name: breakdown
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Property key to break down by
+      responses:
+        "200":
+          description: Time-series data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeSeriesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/funnel:
+    post:
+      summary: Compute a multi-step funnel
+      operationId: funnel
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FunnelRequest"
+      responses:
+        "200":
+          description: Funnel result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FunnelResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+components:
+  parameters:
+    TenantID:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    From:
+      name: from
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date-time
+    To:
+      name: to
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date-time
+
+  schemas:
+    CountResponse:
+      type: object
+      required: [count]
+      properties:
+        count:
+          type: integer
+          format: int64
+
+    TimeSeriesPoint:
+      type: object
+      required: [timestamp, count]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        count:
+          type: integer
+          format: int64
+        breakdown_value:
+          type: string
+
+    TimeSeriesResponse:
+      type: object
+      required: [series]
+      properties:
+        series:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeSeriesPoint"
+
+    FunnelStep:
+      type: object
+      required: [event]
+      properties:
+        event:
+          type: string
+
+    FunnelRequest:
+      type: object
+      required: [steps, from, to]
+      properties:
+        steps:
+          type: array
+          minItems: 2
+          items:
+            $ref: "#/components/schemas/FunnelStep"
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        window_hours:
+          type: integer
+          default: 24
+
+    FunnelStepResult:
+      type: object
+      required: [step, event, count, conversion_rate]
+      properties:
+        step:
+          type: integer
+        event:
+          type: string
+        count:
+          type: integer
+          format: int64
+        conversion_rate:
+          type: number
+          format: float
+
+    FunnelResponse:
+      type: object
+      required: [steps]
+      properties:
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/FunnelStepResult"
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        clickhouse:
+          type: string
+          enum: [ok, error]
+        redis:
+          type: string
+          enum: [ok, error]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Missing or invalid X-Tenant-ID
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
