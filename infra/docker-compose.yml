@@ -164,18 +164,24 @@ services:
     build:
       context: ..
       dockerfile: apps/dashboard/Dockerfile
+      args:
+        VITE_INGEST_URL: "http://localhost:8080"
+        VITE_QUERY_URL: "http://localhost:8081"
+        VITE_APP_URL: "http://localhost:3001"
     container_name: cascade-dashboard
     ports:
       - "3000:3000"
-    environment:
-      VITE_INGEST_URL: "http://localhost:8080"
-      VITE_QUERY_URL: "http://localhost:8081"
-      VITE_APP_URL: "http://localhost:3001"
     depends_on:
       ingest:
         condition: service_healthy
       query:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     logging: *default-logging
 
 volumes:

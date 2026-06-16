@@ -54,6 +54,7 @@ func main() {
 	r.Use(chimw.RealIP)
 	r.Use(chimw.RequestID)
 	r.Use(chimw.Recoverer)
+	r.Use(middleware.CORS)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		chStatus := "ok"
