@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/cascade-analytics/cascade/services/query/internal/cache"
 	"github.com/cascade-analytics/cascade/services/query/internal/handler"
 	"github.com/cascade-analytics/cascade/services/query/internal/middleware"
 	"github.com/cascade-analytics/cascade/services/query/internal/store"
@@ -22,6 +24,7 @@ func main() {
 	chDSN := getenv("CLICKHOUSE_DSN", "clickhouse://cascade:cascade@localhost:9000/cascade")
 	redisURL := getenv("REDIS_URL", "redis://localhost:6379")
 	port := getenv("PORT", "8081")
+	cacheTTL := time.Duration(getenvInt("QUERY_CACHE_TTL_SECONDS", 30)) * time.Second
 
 	chStore, err := store.NewClickHouseStore(chDSN)
 	if err != nil {
@@ -44,7 +47,8 @@ func main() {
 		fatalf("Redis ping: %v", err)
 	}
 
-	queryH := handler.NewQueryHandler(chStore)
+	resultCache := cache.New(rdb, cacheTTL)
+	queryH := handler.NewQueryHandler(chStore, resultCache)
 
 	r := chi.NewRouter()
 	r.Use(chimw.RealIP)
@@ -103,6 +107,15 @@ func main() {
 func getenv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
+	}
+	return fallback
+}
+
+func getenvInt(key string, fallback int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
 	}
 	return fallback
 }

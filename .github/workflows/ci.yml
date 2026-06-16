@@ -55,7 +55,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.24"
           cache-dependency-path: services/${{ matrix.service }}/go.sum
 
       - name: Build
@@ -92,13 +92,14 @@ jobs:
       - name: Start services
         run: docker compose -f infra/docker-compose.yml up -d --build
 
-      - name: Wait for healthy
+      - name: Wait for ingest and query
         run: |
-          timeout 90 bash -c '
-            until docker compose -f infra/docker-compose.yml ps | grep -v "healthy" | grep -q "service"; then
-              sleep 3
-            done
-          ' || docker compose -f infra/docker-compose.yml ps
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/health && \
+            curl -sf http://localhost:8081/health && break
+            echo "Waiting for services ($i/30)..."
+            sleep 5
+          done
 
       - name: Run smoke test
         run: bash scripts/smoke-test.sh
@@ -106,3 +107,7 @@ jobs:
       - name: Dump logs on failure
         if: failure()
         run: docker compose -f infra/docker-compose.yml logs
+
+      - name: Teardown
+        if: always()
+        run: docker compose -f infra/docker-compose.yml down -v

@@ -6,16 +6,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cascade-analytics/cascade/services/query/internal/cache"
 	"github.com/cascade-analytics/cascade/services/query/internal/store"
 	"github.com/cascade-analytics/cascade/services/query/internal/tenant"
 )
 
 type QueryHandler struct {
 	store *store.ClickHouseStore
+	cache *cache.ResultCache
 }
 
-func NewQueryHandler(s *store.ClickHouseStore) *QueryHandler {
-	return &QueryHandler{store: s}
+func NewQueryHandler(s *store.ClickHouseStore, c *cache.ResultCache) *QueryHandler {
+	return &QueryHandler{store: s, cache: c}
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -44,12 +46,25 @@ func (h *QueryHandler) Count(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	key := cache.CountKey(tenantID, event, from.Unix(), to.Unix())
+	if cached, ok := h.cache.Get(r.Context(), key); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		fmt.Fprint(w, cached)
+		return
+	}
+
 	count, err := h.store.CountEvents(r.Context(), tenantID, event, from, to)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "query failed")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]int64{"count": count})
+
+	body, _ := json.Marshal(map[string]int64{"count": count})
+	h.cache.Set(r.Context(), key, string(body))
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body) //nolint:errcheck
 }
 
 // TimeSeries handles GET /v1/timeseries
@@ -72,6 +87,14 @@ func (h *QueryHandler) TimeSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	key := cache.TimeSeriesKey(tenantID, event, interval, from.Unix(), to.Unix())
+	if cached, ok := h.cache.Get(r.Context(), key); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		fmt.Fprint(w, cached)
+		return
+	}
+
 	pts, err := h.store.TimeSeries(r.Context(), tenantID, event, from, to, interval, "")
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "query failed")
@@ -86,7 +109,11 @@ func (h *QueryHandler) TimeSeries(w http.ResponseWriter, r *http.Request) {
 	for i, p := range pts {
 		series[i] = point{Timestamp: p.Timestamp.Format(time.RFC3339), Count: p.Count}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"series": series})
+	body, _ := json.Marshal(map[string]any{"series": series})
+	h.cache.Set(r.Context(), key, string(body))
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body) //nolint:errcheck
 }
 
 func parseTimeRange(fromStr, toStr string) (time.Time, time.Time, error) {
