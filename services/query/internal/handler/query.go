@@ -50,7 +50,7 @@ func (h *QueryHandler) Count(w http.ResponseWriter, r *http.Request) {
 	if cached, ok := h.cache.Get(r.Context(), key); ok {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("X-Cache", "HIT")
-		fmt.Fprint(w, cached)
+		_, _ = fmt.Fprint(w, cached)
 		return
 	}
 
@@ -91,7 +91,7 @@ func (h *QueryHandler) TimeSeries(w http.ResponseWriter, r *http.Request) {
 	if cached, ok := h.cache.Get(r.Context(), key); ok {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("X-Cache", "HIT")
-		fmt.Fprint(w, cached)
+		_, _ = fmt.Fprint(w, cached)
 		return
 	}
 

@@ -1,10 +1,10 @@
 import type { CaptureEvent } from '@cascade/types';
 
 export interface CascadeConfig {
-  apiKey: string;       // tenant_id (public key in v1)
-  ingestUrl: string;    // e.g. http://localhost:8080
+  apiKey: string; // tenant_id (public key in v1)
+  ingestUrl: string; // e.g. http://localhost:8080
   flushInterval?: number; // ms between auto-flushes (default 5000)
-  maxBatchSize?: number;  // max events per batch (default 50)
+  maxBatchSize?: number; // max events per batch (default 50)
   debug?: boolean;
 }
 

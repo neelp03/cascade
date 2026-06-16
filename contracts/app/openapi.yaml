@@ -1,7 +1,7 @@
-openapi: "3.1.0"
+openapi: '3.1.0'
 info:
   title: Cascade App API
-  version: "1.0.0"
+  version: '1.0.0'
   description: |
     Dashboard and organization CRUD API. Backed by Postgres, owned by A3 (Dashboard)
     and A5 (Auth). The query execution is proxied to the Query API.
@@ -16,12 +16,12 @@ paths:
       summary: Health check
       operationId: healthCheck
       responses:
-        "200":
+        '200':
           description: Healthy
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthResponse"
+                $ref: '#/components/schemas/HealthResponse'
 
   # ── Dashboards ──────────────────────────────────────────────────────────────
 
@@ -32,16 +32,16 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: List of dashboards
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Dashboard"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                  $ref: '#/components/schemas/Dashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
     post:
       summary: Create a dashboard
@@ -53,16 +53,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateDashboardRequest"
+              $ref: '#/components/schemas/CreateDashboardRequest'
       responses:
-        "201":
+        '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Dashboard"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                $ref: '#/components/schemas/Dashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /v1/dashboards/{dashboardId}:
     parameters:
@@ -78,14 +78,14 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Dashboard
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Dashboard"
-        "404":
-          $ref: "#/components/responses/NotFound"
+                $ref: '#/components/schemas/Dashboard'
+        '404':
+          $ref: '#/components/responses/NotFound'
     patch:
       summary: Update a dashboard
       operationId: updateDashboard
@@ -96,21 +96,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateDashboardRequest"
+              $ref: '#/components/schemas/UpdateDashboardRequest'
       responses:
-        "200":
+        '200':
           description: Updated dashboard
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Dashboard"
+                $ref: '#/components/schemas/Dashboard'
     delete:
       summary: Delete a dashboard
       operationId: deleteDashboard
       security:
         - bearerAuth: []
       responses:
-        "204":
+        '204':
           description: Deleted
 
   # ── Widgets ──────────────────────────────────────────────────────────────────
@@ -133,14 +133,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateWidgetRequest"
+              $ref: '#/components/schemas/CreateWidgetRequest'
       responses:
-        "201":
+        '201':
           description: Widget created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Widget"
+                $ref: '#/components/schemas/Widget'
 
   /v1/dashboards/{dashboardId}/widgets/{widgetId}:
     parameters:
@@ -166,21 +166,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateWidgetRequest"
+              $ref: '#/components/schemas/UpdateWidgetRequest'
       responses:
-        "200":
+        '200':
           description: Updated widget
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Widget"
+                $ref: '#/components/schemas/Widget'
     delete:
       summary: Delete a widget
       operationId: deleteWidget
       security:
         - bearerAuth: []
       responses:
-        "204":
+        '204':
           description: Deleted
 
 components:
@@ -223,9 +223,9 @@ components:
           type: string
           enum: [number, timeseries, funnel, table]
         config:
-          $ref: "#/components/schemas/WidgetConfig"
+          $ref: '#/components/schemas/WidgetConfig'
         position:
-          $ref: "#/components/schemas/WidgetPosition"
+          $ref: '#/components/schemas/WidgetPosition'
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
@@ -240,7 +240,7 @@ components:
         widgets:
           type: array
           items:
-            $ref: "#/components/schemas/Widget"
+            $ref: '#/components/schemas/Widget'
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
@@ -266,18 +266,18 @@ components:
           type: string
           enum: [number, timeseries, funnel, table]
         config:
-          $ref: "#/components/schemas/WidgetConfig"
+          $ref: '#/components/schemas/WidgetConfig'
         position:
-          $ref: "#/components/schemas/WidgetPosition"
+          $ref: '#/components/schemas/WidgetPosition'
 
     UpdateWidgetRequest:
       type: object
       properties:
         title: { type: string }
         config:
-          $ref: "#/components/schemas/WidgetConfig"
+          $ref: '#/components/schemas/WidgetConfig'
         position:
-          $ref: "#/components/schemas/WidgetPosition"
+          $ref: '#/components/schemas/WidgetPosition'
 
     HealthResponse:
       type: object
@@ -301,10 +301,10 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: '#/components/schemas/ErrorResponse'
     NotFound:
       description: Resource not found
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: '#/components/schemas/ErrorResponse'

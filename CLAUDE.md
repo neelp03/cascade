@@ -41,16 +41,16 @@ cascade/
 
 ## Tech stack
 
-| Concern | Choice |
-|---|---|
-| Go services | Go 1.23; chi v5 router; zap logging; OTEL tracing |
-| Node services | Node 22 LTS; TypeScript; Fastify |
-| Frontend | React 18 + TypeScript + Tailwind CSS + Recharts |
-| Analytical store | ClickHouse 24.8 |
-| Metadata store | PostgreSQL 16 |
-| Queue / pub-sub | Redis Streams (`ingest:stream`) + pub/sub (`rt:*` channels) |
-| Package manager | pnpm 9 workspaces |
-| Containers | Docker Compose (infra/docker-compose.yml) |
+| Concern          | Choice                                                      |
+| ---------------- | ----------------------------------------------------------- |
+| Go services      | Go 1.23; chi v5 router; zap logging; OTEL tracing           |
+| Node services    | Node 22 LTS; TypeScript; Fastify                            |
+| Frontend         | React 18 + TypeScript + Tailwind CSS + Recharts             |
+| Analytical store | ClickHouse 24.8                                             |
+| Metadata store   | PostgreSQL 16                                               |
+| Queue / pub-sub  | Redis Streams (`ingest:stream`) + pub/sub (`rt:*` channels) |
+| Package manager  | pnpm 9 workspaces                                           |
+| Containers       | Docker Compose (infra/docker-compose.yml)                   |
 
 ## Running locally
 
@@ -77,6 +77,7 @@ If you need to change a contract, update PRD §6 first, log in `DECISIONS.md`, t
 ## Code conventions
 
 ### Go
+
 - `internal/` for non-exported packages; `cmd/` for `main.go`.
 - Structured logging via `go.uber.org/zap`; never `fmt.Print` in production paths.
 - All errors wrapped with context: `fmt.Errorf("doing X: %w", err)`.
@@ -84,12 +85,14 @@ If you need to change a contract, update PRD §6 first, log in `DECISIONS.md`, t
 - Every handler is traced with OTEL spans.
 
 ### TypeScript / Node
+
 - Strict mode (`"strict": true` in tsconfig).
 - No `any` without a comment explaining why.
 - Prefer `async/await` over callback chains.
 - Fastify for HTTP in Node services; Vite for the frontend.
 
 ### React
+
 - Functional components + hooks only.
 - Tailwind for all styling — no inline styles, no CSS modules.
 - Recharts for charts.
@@ -104,14 +107,14 @@ In M1, the ingest API reads `X-Tenant-ID` header and rejects requests without on
 
 ## Agent ownership (do not reach into another agent's tables/packages)
 
-| Agent | Owns |
-|---|---|
-| A1 Ingestion | SDK, ingest service, writer service, CH `events` write path |
-| A2 Query | query service, CH read layer |
-| A3 Dashboard | React app, app-api service, PG `dashboards`/`widgets`/`queries` |
-| A4 Realtime | realtime service, `rt:*` channels, client WS layer |
-| A5 Auth | auth service, PG `orgs`/`users`/`memberships`, tenancy middleware |
-| A6 Platform | Docker builds, observability, CI/CD, load-test harness |
+| Agent        | Owns                                                              |
+| ------------ | ----------------------------------------------------------------- |
+| A1 Ingestion | SDK, ingest service, writer service, CH `events` write path       |
+| A2 Query     | query service, CH read layer                                      |
+| A3 Dashboard | React app, app-api service, PG `dashboards`/`widgets`/`queries`   |
+| A4 Realtime  | realtime service, `rt:*` channels, client WS layer                |
+| A5 Auth      | auth service, PG `orgs`/`users`/`memberships`, tenancy middleware |
+| A6 Platform  | Docker builds, observability, CI/CD, load-test harness            |
 
 ## Commit style
 
@@ -123,6 +126,7 @@ Scope: ingest | writer | query | dashboard | realtime | auth | platform | types 
 ```
 
 Examples:
+
 ```
 feat(ingest): add batch endpoint for JS SDK
 fix(writer): handle Redis XACK failure on writer crash

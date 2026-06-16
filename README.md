@@ -6,13 +6,13 @@ Events flow in through a tiny JS SDK, get buffered in Redis, land in ClickHouse 
 
 ![Cascade dashboard showing live event counts](docs/screenshots/dashboard.png)
 
-*Three widgets, three live ClickHouse queries, ~300 seeded events flowing through the real pipeline — not mock data.*
+_Three widgets, three live ClickHouse queries, ~300 seeded events flowing through the real pipeline — not mock data._
 
 ---
 
 ## Why this exists
 
-Most analytics platforms ask you to ship your product data to someone else's cloud. Cascade is the alternative: a columnar store you own (ClickHouse), a queue you control (Redis Streams), and services small enough to read in an afternoon. The goal was never to out-feature PostHog — it was to prove that the *hard parts* (multi-tenant event ingestion, sub-second query latency, collaborative dashboards) are tractable with a small, well-chosen stack.
+Most analytics platforms ask you to ship your product data to someone else's cloud. Cascade is the alternative: a columnar store you own (ClickHouse), a queue you control (Redis Streams), and services small enough to read in an afternoon. The goal was never to out-feature PostHog — it was to prove that the _hard parts_ (multi-tenant event ingestion, sub-second query latency, collaborative dashboards) are tractable with a small, well-chosen stack.
 
 ## Architecture
 
@@ -45,16 +45,16 @@ Most analytics platforms ask you to ship your product data to someone else's clo
 
 This isn't a sketch — every box in the diagram above is a real running container, and the pipeline has been exercised end-to-end with seeded data and an automated smoke test.
 
-| Layer | Status |
-|---|---|
-| JS SDK → ingest API → Redis Stream | ✅ batches and single captures, UUIDv7 event IDs |
-| Writer: Redis Stream → ClickHouse | ✅ batched async-insert, at-least-once, auto-recovers from a deleted consumer group |
-| Query API: count + time-series | ✅ tenant-scoped, Redis-cached (30s TTL, `X-Cache: HIT` header) |
-| Dashboard | ✅ React + Tailwind, live widgets pulling real counts |
-| Auth | ✅ register/login, bcrypt, JWT issuance, Postgres-backed orgs/users/memberships |
-| CI | ✅ GitHub Actions: Go build+test matrix, TS typecheck+build, Docker build, smoke test |
+| Layer                              | Status                                                                                |
+| ---------------------------------- | ------------------------------------------------------------------------------------- |
+| JS SDK → ingest API → Redis Stream | ✅ batches and single captures, UUIDv7 event IDs                                      |
+| Writer: Redis Stream → ClickHouse  | ✅ batched async-insert, at-least-once, auto-recovers from a deleted consumer group   |
+| Query API: count + time-series     | ✅ tenant-scoped, Redis-cached (30s TTL, `X-Cache: HIT` header)                       |
+| Dashboard                          | ✅ React + Tailwind, live widgets pulling real counts                                 |
+| Auth                               | ✅ register/login, bcrypt, JWT issuance, Postgres-backed orgs/users/memberships       |
+| CI                                 | ✅ GitHub Actions: Go build+test matrix, TS typecheck+build, Docker build, smoke test |
 
-What's *not* built yet — funnels, realtime WebSocket push, dashboard CRUD persistence, JWT enforcement on ingest/query — is intentionally deferred and tracked in [`briefs/`](briefs/), one file per subsystem owner.
+What's _not_ built yet — funnels, realtime WebSocket push, dashboard CRUD persistence, JWT enforcement on ingest/query — is intentionally deferred and tracked in [`briefs/`](briefs/), one file per subsystem owner.
 
 ## Quick start
 
@@ -78,12 +78,12 @@ print(urllib.request.urlopen(req).read().decode())
 "
 ```
 
-| Service | URL |
-|---|---|
-| Dashboard | http://localhost:3000 |
-| Ingest API | http://localhost:8080 |
-| Query API | http://localhost:8081 |
-| Auth API | http://localhost:8083 |
+| Service         | URL                   |
+| --------------- | --------------------- |
+| Dashboard       | http://localhost:3000 |
+| Ingest API      | http://localhost:8080 |
+| Query API       | http://localhost:8081 |
+| Auth API        | http://localhost:8083 |
 | ClickHouse HTTP | http://localhost:8123 |
 
 Full command reference: [`briefs/OPERATING-GUIDE.md`](briefs/OPERATING-GUIDE.md).
@@ -101,7 +101,7 @@ code: 457, message: Value toDateTime('2026-06-16 01:04:47') cannot be parsed
 as DateTime64 for query parameter 'from'
 ```
 
-`clickhouse-go/v2` serializes a Go `time.Time` as the *string* `toDateTime('...')` regardless of the declared parameter type — and ClickHouse's named-parameter substitution treats that as a literal value to parse, not a function call to evaluate. Switching the type hint to `DateTime` produced the same failure with a different message. The fix that actually held up: bind the time as a plain `Int64` Unix timestamp and cast explicitly in SQL —
+`clickhouse-go/v2` serializes a Go `time.Time` as the _string_ `toDateTime('...')` regardless of the declared parameter type — and ClickHouse's named-parameter substitution treats that as a literal value to parse, not a function call to evaluate. Switching the type hint to `DateTime` produced the same failure with a different message. The fix that actually held up: bind the time as a plain `Int64` Unix timestamp and cast explicitly in SQL —
 
 ```go
 clickhouse.Named("from", from.Unix())
@@ -116,14 +116,14 @@ The writer consumes a Redis Stream via a consumer group. Mid-debugging, I delete
 
 ### The smoke test that raced its own clock
 
-`FROM`/`TO` were captured at the top of the script; the event timestamp `TS` was captured several lines later, after a health check and a baseline query. On a slow run, events ended up timestamped *after* the query window's `TO` — invisible to the very count query meant to find them. The fix: capture one `NOW_EPOCH` and derive `FROM` (−1h), `TO` (+5min buffer), and `TS` from that single value, so events can never land outside the window regardless of how long the script takes to reach the batch-send step.
+`FROM`/`TO` were captured at the top of the script; the event timestamp `TS` was captured several lines later, after a health check and a baseline query. On a slow run, events ended up timestamped _after_ the query window's `TO` — invisible to the very count query meant to find them. The fix: capture one `NOW_EPOCH` and derive `FROM` (−1h), `TO` (+5min buffer), and `TS` from that single value, so events can never land outside the window regardless of how long the script takes to reach the batch-send step.
 
 ### The dashboard that rendered nothing — three different bugs deep
 
 Getting the dashboard to actually show real numbers (not just "the container is healthy") surfaced a chain of issues that only appear when you click through as a user:
 
 1. **nginx listened on the wrong port.** `docker-compose.yml` mapped host `3000` → container `3000`, but the stock `nginx:1.27-alpine` image listens on `80` by default — nobody overrode it. Docker's port forwarding to a port nothing is bound to surfaced as a silent `Recv failure: Connection reset by peer`, not the more obvious "connection refused." Fixed with a custom `nginx.conf` that actually listens on 3000, plus a real healthcheck (there wasn't one before).
-2. **Vite env vars were set at the wrong layer.** `VITE_QUERY_URL` was passed as a container `environment:` variable — but Vite inlines `import.meta.env.VITE_*` at *build time*, and a static SPA served by nginx never reads runtime env vars. The bundled JS always had `undefined`, silently fell back to a relative `/api/query` path, which nginx's SPA fallback resolved to `index.html`. The widgets were trying to `JSON.parse()` an HTML document. Fixed by passing the same values as Docker build `args` instead.
+2. **Vite env vars were set at the wrong layer.** `VITE_QUERY_URL` was passed as a container `environment:` variable — but Vite inlines `import.meta.env.VITE_*` at _build time_, and a static SPA served by nginx never reads runtime env vars. The bundled JS always had `undefined`, silently fell back to a relative `/api/query` path, which nginx's SPA fallback resolved to `index.html`. The widgets were trying to `JSON.parse()` an HTML document. Fixed by passing the same values as Docker build `args` instead.
 3. **No CORS headers.** Once the dashboard was actually calling the real query API from `localhost:3000` to `localhost:8081`, the browser blocked it outright — no `Access-Control-Allow-Origin` header existed on a cross-origin API that was never designed to be called from a browser context directly. Added permissive CORS middleware to both Go services (tightened to an allowlist once JWT auth lands).
 
 None of these would show up in a unit test or even a curl-based health check. They only surface when you load the actual page in an actual browser and watch what happens — which is exactly why this session ended with a Playwright screenshot, not just a green smoke test.

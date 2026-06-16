@@ -1,11 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import {
-  findUserByEmail,
-  createOrgUserMembership,
-  findOrgByMembership,
-} from '../db/queries.js';
+import { findUserByEmail, createOrgUserMembership, findOrgByMembership } from '../db/queries.js';
 
 const RegisterBody = z.object({
   email: z.string().email(),
@@ -20,7 +16,10 @@ const LoginBody = z.object({
 });
 
 function slugify(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 export async function authRoutes(app: FastifyInstance) {
@@ -52,7 +51,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     const token = await reply.jwtSign(
       { sub: user.id, org_id: org.id, role: 'owner' },
-      { expiresIn: '7d' },
+      { expiresIn: '7d' }
     );
 
     return reply.status(201).send({
@@ -86,7 +85,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     const token = await reply.jwtSign(
       { sub: user.id, org_id: org.id, role: 'owner' },
-      { expiresIn: '7d' },
+      { expiresIn: '7d' }
     );
 
     return reply.send({

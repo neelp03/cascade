@@ -63,6 +63,7 @@ cd infra && docker compose build <service> && docker compose up -d --no-deps <se
 ## Starting a new agent session
 
 Every Claude Code session should:
+
 1. Read `CLAUDE.md` (conventions, ownership map, commit style).
 2. Read your agent brief in `briefs/A<N>-<name>.md`.
 3. Read `DECISIONS.md` (architecture log).
@@ -89,11 +90,13 @@ docker run --rm -v $(PWD)/services/<name>:/app -w /app golang:1.24-alpine \
 ```
 
 **Version constraints:**
+
 - Use `golang:1.24-alpine` Docker image
 - `go.mod` must say `go 1.24` (go-redis/v9 and clickhouse-go/v2 require it)
 - Always `RUN apk add --no-cache git` in Dockerfile builder stage
 
 **ClickHouse named parameter binding:**
+
 ```go
 // WRONG — driver wraps time.Time in toDateTime(...) which CH rejects as a named param
 clickhouse.Named("from", from)  // type hint {from:DateTime} or {from:DateTime64}
@@ -191,6 +194,7 @@ INGEST_URL=https://ingest.example.com QUERY_URL=https://query.example.com bash s
 ```
 
 The smoke test:
+
 1. Checks health of ingest + query
 2. Gets baseline count for `smoke_test` event
 3. Sends a batch of 10 events
@@ -202,33 +206,43 @@ All timestamps are anchored to `NOW_EPOCH` at script start so events always land
 ## Troubleshooting
 
 ### ClickHouse won't start
+
 Check for config errors: `docker logs cascade-clickhouse 2>&1 | grep -i error`
+
 - Code 137 = user-level settings (`max_memory_usage`, `async_insert*`) placed in server config. Move them to `users.d/`.
 - Code 450 = TTL on DateTime64 without `toDateTime()` cast. Use `TTL toDateTime(timestamp) + INTERVAL 1 YEAR`.
 
 ### Writer keeps crashing with NOGROUP
+
 The Redis stream consumer group was deleted. Recreate it:
+
 ```bash
 docker exec cascade-redis redis-cli XGROUP CREATE ingest:stream writer-group 0 MKSTREAM
 docker compose restart writer
 ```
 
 ### Query returns 500
+
 Check the store-level error: add `fmt.Printf("[DEBUG] error: %v\n", err)` to `CountEvents` temporarily.
 Most likely cause: datetime binding issue — ensure time parameters are bound as `Int64` Unix seconds with `toDateTime64()` cast in SQL.
 
 ### Health check fails with curl exit 22 (405)
+
 `wget --spider` sends a HEAD request; chi v5.3 returns 405 on GET-only routes. Use `curl -sf` in healthchecks.
 
 ### go mod tidy fails: "missing go.sum"
+
 Build the container; `go mod tidy` runs inside Docker:
+
 ```bash
 docker run --rm -v $(PWD)/services/<name>:/app -w /app golang:1.24-alpine \
     sh -c "apk add git && go mod tidy"
 ```
 
 ### Events in ClickHouse but count returns 0
+
 Time window mismatch. Verify with a wide window:
+
 ```bash
 curl -H "X-Tenant-ID: <id>" \
   "http://localhost:8081/v1/count?event=<name>&from=2026-01-01T00:00:00Z&to=2027-01-01T00:00:00Z"
@@ -239,6 +253,7 @@ curl -H "X-Tenant-ID: <id>" \
 ```
 type(scope): short imperative description
 ```
+
 - Types: `feat | fix | refactor | test | chore | docs | infra`
 - Scopes: `ingest | writer | query | dashboard | realtime | auth | platform | types | contracts`
 - No co-author trailers. No ticket references in the subject line.
@@ -256,11 +271,11 @@ Contracts are: `CaptureEvent`/`StoredEvent`, ClickHouse `events` DDL, Postgres s
 
 ## Agent ownership
 
-| Agent | Owns | Brief |
-|---|---|---|
-| A1 | SDK, ingest, writer, CH write path | `briefs/A1-ingestion.md` |
-| A2 | query service, CH read layer | `briefs/A2-query.md` |
-| A3 | React dashboard, app-api, PG dashboards/widgets | `briefs/A3-dashboard.md` |
-| A4 | realtime service, `rt:*` channels, WS client | `briefs/A4-realtime.md` |
-| A5 | auth service, PG orgs/users/memberships, JWT | `briefs/A5-auth.md` |
-| A6 | Docker, CI, OTEL, load tests, Makefile | `briefs/A6-platform.md` |
+| Agent | Owns                                            | Brief                    |
+| ----- | ----------------------------------------------- | ------------------------ |
+| A1    | SDK, ingest, writer, CH write path              | `briefs/A1-ingestion.md` |
+| A2    | query service, CH read layer                    | `briefs/A2-query.md`     |
+| A3    | React dashboard, app-api, PG dashboards/widgets | `briefs/A3-dashboard.md` |
+| A4    | realtime service, `rt:*` channels, WS client    | `briefs/A4-realtime.md`  |
+| A5    | auth service, PG orgs/users/memberships, JWT    | `briefs/A5-auth.md`      |
+| A6    | Docker, CI, OTEL, load tests, Makefile          | `briefs/A6-platform.md`  |

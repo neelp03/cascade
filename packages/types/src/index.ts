@@ -13,7 +13,7 @@ export interface CaptureEvent {
 
 // Server-injected fields added by the ingest service before writing to ClickHouse.
 export interface StoredEvent extends CaptureEvent {
-  event_id: string;    // UUIDv7
+  event_id: string; // UUIDv7
   tenant_id: string;
   received_at: string; // ISO 8601
 }
@@ -32,7 +32,7 @@ export interface TimeSeriesRequest {
   tenant_id: string;
   event: string;
   from: string; // ISO 8601
-  to: string;   // ISO 8601
+  to: string; // ISO 8601
   interval: 'minute' | 'hour' | 'day';
   breakdown?: string; // property key
 }

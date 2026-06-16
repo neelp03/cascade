@@ -16,7 +16,7 @@ export interface UserRow {
 export async function findUserByEmail(email: string): Promise<UserRow | null> {
   const res = await pool.query<UserRow>(
     'SELECT id, email, name, password_hash FROM users WHERE email = $1',
-    [email],
+    [email]
   );
   return res.rows[0] ?? null;
 }
@@ -26,7 +26,7 @@ export async function createOrgUserMembership(
   orgSlug: string,
   email: string,
   name: string,
-  passwordHash: string,
+  passwordHash: string
 ): Promise<{ org: OrgRow; user: UserRow }> {
   const client = await pool.connect();
   try {
@@ -34,20 +34,21 @@ export async function createOrgUserMembership(
 
     const orgRes = await client.query<OrgRow>(
       'INSERT INTO orgs (name, slug) VALUES ($1, $2) RETURNING id, name, slug',
-      [orgName, orgSlug],
+      [orgName, orgSlug]
     );
     const org = orgRes.rows[0];
 
     const userRes = await client.query<UserRow>(
       'INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING id, email, name, password_hash',
-      [email, name, passwordHash],
+      [email, name, passwordHash]
     );
     const user = userRes.rows[0];
 
-    await client.query(
-      'INSERT INTO memberships (org_id, user_id, role) VALUES ($1, $2, $3)',
-      [org.id, user.id, 'owner'],
-    );
+    await client.query('INSERT INTO memberships (org_id, user_id, role) VALUES ($1, $2, $3)', [
+      org.id,
+      user.id,
+      'owner',
+    ]);
 
     await client.query('COMMIT');
     return { org, user };
@@ -67,7 +68,7 @@ export async function findOrgByMembership(userId: string): Promise<OrgRow | null
      WHERE m.user_id = $1
      ORDER BY m.created_at ASC
      LIMIT 1`,
-    [userId],
+    [userId]
   );
   return res.rows[0] ?? null;
 }

@@ -27,7 +27,7 @@ func main() {
 		fatalf("parse Redis URL: %v", err)
 	}
 	rdb := redis.NewClient(opt)
-	defer rdb.Close()
+	defer func() { _ = rdb.Close() }()
 
 	chWriter, err := writer.NewClickHouseWriter(chDSN)
 	if err != nil {

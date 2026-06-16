@@ -1,7 +1,7 @@
-openapi: "3.1.0"
+openapi: '3.1.0'
 info:
   title: Cascade Ingest API
-  version: "1.0.0"
+  version: '1.0.0'
   description: |
     High-throughput event ingestion endpoint. Enqueues validated events to
     Redis Streams for async write to ClickHouse. Returns 202 immediately.
@@ -16,60 +16,60 @@ paths:
       summary: Health check
       operationId: healthCheck
       responses:
-        "200":
+        '200':
           description: Service is healthy
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthResponse"
+                $ref: '#/components/schemas/HealthResponse'
 
   /v1/capture:
     post:
       summary: Capture a single event
       operationId: captureEvent
       parameters:
-        - $ref: "#/components/parameters/TenantID"
+        - $ref: '#/components/parameters/TenantID'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CaptureEventRequest"
+              $ref: '#/components/schemas/CaptureEventRequest'
       responses:
-        "202":
+        '202':
           description: Event accepted
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CaptureResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                $ref: '#/components/schemas/CaptureResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /v1/batch:
     post:
       summary: Capture a batch of events (used by JS SDK)
       operationId: captureBatch
       parameters:
-        - $ref: "#/components/parameters/TenantID"
+        - $ref: '#/components/parameters/TenantID'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/BatchCaptureRequest"
+              $ref: '#/components/schemas/BatchCaptureRequest'
       responses:
-        "202":
+        '202':
           description: Batch accepted
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BatchCaptureResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                $ref: '#/components/schemas/BatchCaptureResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
 components:
   parameters:
@@ -95,7 +95,7 @@ components:
         timestamp:
           type: string
           format: date-time
-          example: "2026-06-15T10:00:00.000Z"
+          example: '2026-06-15T10:00:00.000Z'
         distinct_id:
           type: string
           example: user_abc123
@@ -116,7 +116,7 @@ components:
           minItems: 1
           maxItems: 1000
           items:
-            $ref: "#/components/schemas/CaptureEventRequest"
+            $ref: '#/components/schemas/CaptureEventRequest'
 
     CaptureResponse:
       type: object
@@ -158,10 +158,10 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: '#/components/schemas/ErrorResponse'
     Unauthorized:
       description: Missing or invalid X-Tenant-ID header
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: '#/components/schemas/ErrorResponse'

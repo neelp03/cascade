@@ -99,7 +99,7 @@ func (s *ClickHouseStore) TimeSeries(
 	if err != nil {
 		return nil, fmt.Errorf("timeseries query: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var pts []TimeSeriesPoint
 	for rows.Next() {

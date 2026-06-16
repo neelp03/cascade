@@ -20,6 +20,7 @@ services/realtime (Node)  → validate JWT on WS upgrade
 ```
 
 JWT payload:
+
 ```json
 {
   "sub": "<user_id>",
@@ -50,6 +51,7 @@ services/auth/
 ```
 
 **`package.json` dependencies:**
+
 ```json
 {
   "fastify": "^4",
@@ -63,17 +65,20 @@ services/auth/
 ### 2. Auth endpoints
 
 **`POST /auth/register`**
+
 ```json
 // Request
 {"email": "user@example.com", "password": "...", "name": "Alice", "org_name": "Acme"}
 // Response
 {"user": {...}, "org": {...}, "token": "<JWT>"}
 ```
+
 - Creates org + user + owner membership in a single transaction.
 - Hash password with `bcryptjs` (rounds: 12).
 - Return signed JWT (exp: 7 days).
 
 **`POST /auth/login`**
+
 ```json
 // Request
 {"email": "user@example.com", "password": "..."}
@@ -134,16 +139,16 @@ auth:
     dockerfile: Dockerfile
   container_name: cascade-auth
   ports:
-    - "8083:8083"
+    - '8083:8083'
   environment:
-    PORT: "8083"
-    DATABASE_URL: "postgresql://cascade:cascade@postgres:5432/cascade"
-    JWT_SECRET: "cascade-dev-secret-change-in-production-min32chars"
+    PORT: '8083'
+    DATABASE_URL: 'postgresql://cascade:cascade@postgres:5432/cascade'
+    JWT_SECRET: 'cascade-dev-secret-change-in-production-min32chars'
   depends_on:
     postgres:
       condition: service_healthy
   healthcheck:
-    test: ["CMD", "curl", "-sf", "http://localhost:8083/health"]
+    test: ['CMD', 'curl', '-sf', 'http://localhost:8083/health']
     interval: 5s
     timeout: 5s
     retries: 10
@@ -153,6 +158,7 @@ auth:
 ## Postgres tables (already migrated)
 
 See `infra/migrations/postgres/001_init.sql`:
+
 - `orgs` — `(id UUID, name, slug UNIQUE, created_at, updated_at)`
 - `users` — `(id UUID, email UNIQUE, name, password_hash, created_at, updated_at)`
 - `memberships` — `(org_id FK orgs, user_id FK users, role CHECK IN ('owner','admin','member'), created_at)` PK: `(org_id, user_id)`

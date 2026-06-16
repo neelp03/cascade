@@ -1,6 +1,6 @@
 packages:
-  - "apps/*"
-  - "packages/*"
-  - "services/realtime"
-  - "services/app-api"
-  - "services/auth"
+  - 'apps/*'
+  - 'packages/*'
+  - 'services/realtime'
+  - 'services/app-api'
+  - 'services/auth'

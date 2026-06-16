@@ -33,6 +33,7 @@ services/realtime/
 ```
 
 **`package.json` dependencies:**
+
 ```json
 {
   "fastify": "^4",
@@ -44,6 +45,7 @@ services/realtime/
 ### 2. WebSocket protocol
 
 Client → server (JSON over WS):
+
 ```jsonc
 {"type": "subscribe",   "tenant_id": "...", "event": "page_view"}
 {"type": "unsubscribe", "tenant_id": "...", "event": "page_view"}
@@ -51,6 +53,7 @@ Client → server (JSON over WS):
 ```
 
 Server → client (JSON over WS):
+
 ```jsonc
 {"type": "count_update", "tenant_id": "...", "event": "page_view", "delta": 5}
 {"type": "pong"}
@@ -62,8 +65,9 @@ Server → client (JSON over WS):
 Channel name pattern: `rt:<tenant_id>:<event>`
 
 Message payload (JSON string):
+
 ```json
-{"tenant_id": "...", "event": "page_view", "delta": 10}
+{ "tenant_id": "...", "event": "page_view", "delta": 10 }
 ```
 
 The realtime service subscribes to channels dynamically as clients subscribe. Use one Redis connection per subscribed channel (or a pattern subscription `rt:*` and route by channel).
@@ -73,6 +77,7 @@ The realtime service subscribes to channels dynamically as clients subscribe. Us
 Modify `services/writer/internal/writer/clickhouse.go` to publish a pub/sub message after each successful batch write. This is a **cross-agent dependency** — coordinate with A1 or make the change yourself (A4 owns the `rt:*` channels per CLAUDE.md).
 
 In writer, after `batch.Send()`:
+
 ```go
 // After successful ClickHouse write:
 for event, count := range batchCountByEvent {
@@ -88,15 +93,16 @@ for event, count := range batchCountByEvent {
 ### 5. Dashboard WebSocket hook
 
 In `apps/dashboard/src/hooks/useRealtimeCount.ts`:
+
 ```typescript
 export function useRealtimeCount(tenantId: string, event: string, initial: number) {
   const [count, setCount] = useState(initial);
   useEffect(() => {
     const ws = new WebSocket(import.meta.env.VITE_REALTIME_URL ?? 'ws://localhost:8082/ws');
-    ws.onopen = () => ws.send(JSON.stringify({type:'subscribe', tenant_id: tenantId, event}));
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'subscribe', tenant_id: tenantId, event }));
     ws.onmessage = (e) => {
       const msg = JSON.parse(e.data);
-      if (msg.type === 'count_update') setCount(c => c + msg.delta);
+      if (msg.type === 'count_update') setCount((c) => c + msg.delta);
     };
     return () => ws.close();
   }, [tenantId, event]);
@@ -113,15 +119,15 @@ realtime:
     dockerfile: Dockerfile
   container_name: cascade-realtime
   ports:
-    - "8082:8082"
+    - '8082:8082'
   environment:
-    PORT: "8082"
-    REDIS_URL: "redis://redis:6379"
+    PORT: '8082'
+    REDIS_URL: 'redis://redis:6379'
   depends_on:
     redis:
       condition: service_healthy
   healthcheck:
-    test: ["CMD", "curl", "-sf", "http://localhost:8082/health"]
+    test: ['CMD', 'curl', '-sf', 'http://localhost:8082/health']
     interval: 5s
     timeout: 5s
     retries: 10

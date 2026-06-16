@@ -28,7 +28,7 @@ func main() {
 		fatalf("parse Redis URL: %v", err)
 	}
 	rdb := redis.NewClient(opt)
-	defer rdb.Close()
+	defer func() { _ = rdb.Close() }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -40,7 +40,6 @@ func main() {
 	captureH := handler.NewCaptureHandler(enqueuer)
 
 	r := chi.NewRouter()
-	r.Use(chimw.RealIP)
 	r.Use(chimw.RequestID)
 	r.Use(chimw.Recoverer)
 	r.Use(middleware.CORS)

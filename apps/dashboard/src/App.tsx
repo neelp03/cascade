@@ -2,8 +2,7 @@ import { NumberWidget } from './components/NumberWidget';
 
 // M1 dashboard: a single number widget proving the full pipeline.
 // Tenant ID comes from env or falls back to the dev seed org.
-const TENANT_ID =
-  import.meta.env.VITE_TENANT_ID ?? '00000000-0000-0000-0000-000000000001';
+const TENANT_ID = import.meta.env.VITE_TENANT_ID ?? '00000000-0000-0000-0000-000000000001';
 
 const now = new Date();
 const from = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
@@ -32,13 +31,7 @@ export default function App() {
           to={to}
           title="Signups (24h)"
         />
-        <NumberWidget
-          tenantId={TENANT_ID}
-          event="click"
-          from={from}
-          to={to}
-          title="Clicks (24h)"
-        />
+        <NumberWidget tenantId={TENANT_ID} event="click" from={from} to={to} title="Clicks (24h)" />
       </main>
     </div>
   );

@@ -9,20 +9,24 @@ All Docker images build and run. Core infra (ClickHouse, Postgres, Redis) is hea
 ## Key infra facts
 
 ### docker-compose (infra/docker-compose.yml)
+
 - No `version:` field (removed — deprecated warning in Docker Compose v2).
 - Healthchecks use `curl -sf` for Go services (not `wget --spider` — chi v5.3 returns 405 for HEAD on GET routes).
 - Go service images: `golang:1.24-alpine` builder + `alpine:3.20` runtime. Both ingest and query runtime images include `curl` for healthchecks.
 - All Go services need `RUN apk add --no-cache git` in the builder stage (go mod download requires git for private modules).
 
 ### ClickHouse config
+
 - Server config: `infra/clickhouse/config.xml` — sets `listen_host: 0.0.0.0` and `skip_check_for_incorrect_settings: 1`.
 - User-level settings (async_insert, max_memory_usage) are in `infra/clickhouse/users.d/cascade_profile.xml` mounted as a single file (NOT a directory — ClickHouse entrypoint writes `default-user.xml` into `users.d/`).
 - Migration files in `infra/migrations/clickhouse/001_events.sql`, `002_events_counts.sql`, `003_mv.sql` — processed in lexicographic order by the ClickHouse entrypoint.
 
 ### Go module layout
+
 Each Go service has its own `go.mod` (no Go workspace). Modules are independent.
 
 ### Known version constraints
+
 - `go-redis/v9 v9.20.1` requires Go ≥ 1.24
 - `clickhouse-go/v2 v2.46.0` requires Go ≥ 1.24.1
 - All Go images and `go.mod` files must specify `go 1.24` or higher.
@@ -47,7 +51,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-        with: {go-version: '1.24'}
+        with: { go-version: '1.24' }
       - run: go build ./...
         working-directory: services/${{ matrix.service }}
       - run: go test ./...
@@ -58,9 +62,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
-        with: {version: '9'}
+        with: { version: '9' }
       - uses: actions/setup-node@v4
-        with: {node-version: '22', cache: 'pnpm'}
+        with: { node-version: '22', cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm build
@@ -77,7 +81,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker compose -f infra/docker-compose.yml up -d
-      - run: sleep 30  # wait for ClickHouse startup
+      - run: sleep 30 # wait for ClickHouse startup
       - run: bash scripts/smoke-test.sh
       - run: docker compose -f infra/docker-compose.yml down -v
 ```
@@ -87,6 +91,7 @@ jobs:
 A1/A2 add spans; A6 wires the exporter:
 
 Add to each Go service's `main.go`:
+
 ```go
 import "go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 // In dev: stdout exporter. In prod: OTLP exporter pointed at Jaeger/Tempo.
@@ -110,13 +115,20 @@ k6 run scripts/k6-ingest.js
 ```
 
 Or create `scripts/k6-ingest.js`:
+
 ```javascript
 import http from 'k6/http';
 export const options = { vus: 100, duration: '30s' };
-export default function() {
-  http.post('http://localhost:8080/v1/batch', JSON.stringify({
-    events: [{event: 'load_test', distinct_id: `user-${__VU}`, timestamp: new Date().toISOString()}]
-  }), { headers: { 'Content-Type': 'application/json', 'X-Tenant-ID': 'load-test-org' }});
+export default function () {
+  http.post(
+    'http://localhost:8080/v1/batch',
+    JSON.stringify({
+      events: [
+        { event: 'load_test', distinct_id: `user-${__VU}`, timestamp: new Date().toISOString() },
+      ],
+    }),
+    { headers: { 'Content-Type': 'application/json', 'X-Tenant-ID': 'load-test-org' } }
+  );
 }
 ```
 
@@ -125,6 +137,7 @@ export default function() {
 Current targets: `install`, `up`, `down`, `logs`, `smoke`, `build`.
 
 Add:
+
 ```makefile
 .PHONY: test lint load-test
 
@@ -154,12 +167,14 @@ reset-data:
 ### 6. Secrets management
 
 For production: document in `infra/README.md` that these env vars must be overridden:
+
 - `CLICKHOUSE_PASSWORD`, `POSTGRES_PASSWORD`, `JWT_SECRET`
 - Never commit production secrets. Use `.env.production` (in `.gitignore`) or a secrets manager.
 
 ### 7. Docker image optimisation
 
 Current Go images are multi-stage but not layer-cached efficiently. After each agent ships their service, ensure:
+
 - `go.mod` + `go.sum` are copied before source (layer cache for `go mod download`).
 - Build args for version tags: `ARG VERSION=dev; -ldflags="-X main.Version=${VERSION}"`.
 
@@ -177,12 +192,12 @@ cd infra && docker compose build <service> && docker compose up -d --no-deps <se
 
 ## Current docker-compose services and ports
 
-| Service | Port | Health endpoint |
-|---|---|---|
-| clickhouse | 8123 (HTTP), 9000 (native) | `GET /ping` |
-| postgres | 5432 | `pg_isready` |
-| redis | 6379 | `redis-cli ping` |
-| ingest | 8080 | `GET /health` |
-| writer | — (no HTTP) | — |
-| query | 8081 | `GET /health` |
-| dashboard | 3000 | — (nginx) |
+| Service    | Port                       | Health endpoint  |
+| ---------- | -------------------------- | ---------------- |
+| clickhouse | 8123 (HTTP), 9000 (native) | `GET /ping`      |
+| postgres   | 5432                       | `pg_isready`     |
+| redis      | 6379                       | `redis-cli ping` |
+| ingest     | 8080                       | `GET /health`    |
+| writer     | — (no HTTP)                | —                |
+| query      | 8081                       | `GET /health`    |
+| dashboard  | 3000                       | — (nginx)        |

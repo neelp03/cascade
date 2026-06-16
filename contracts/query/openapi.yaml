@@ -1,7 +1,7 @@
-openapi: "3.1.0"
+openapi: '3.1.0'
 info:
   title: Cascade Query API
-  version: "1.0.0"
+  version: '1.0.0'
   description: |
     Analytical query API over ClickHouse. Results are cached in Redis.
     This is the highest-traffic interface — A3 (Dashboard) mocks this until A2 is live.
@@ -16,51 +16,51 @@ paths:
       summary: Health check
       operationId: healthCheck
       responses:
-        "200":
+        '200':
           description: Service is healthy
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthResponse"
+                $ref: '#/components/schemas/HealthResponse'
 
   /v1/count:
     get:
       summary: Count events in a time range
       operationId: countEvents
       parameters:
-        - $ref: "#/components/parameters/TenantID"
+        - $ref: '#/components/parameters/TenantID'
         - name: event
           in: query
           required: true
           schema:
             type: string
-        - $ref: "#/components/parameters/From"
-        - $ref: "#/components/parameters/To"
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
       responses:
-        "200":
+        '200':
           description: Event count
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CountResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                $ref: '#/components/schemas/CountResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /v1/timeseries:
     get:
       summary: Time-series event counts
       operationId: timeSeries
       parameters:
-        - $ref: "#/components/parameters/TenantID"
+        - $ref: '#/components/parameters/TenantID'
         - name: event
           in: query
           required: true
           schema:
             type: string
-        - $ref: "#/components/parameters/From"
-        - $ref: "#/components/parameters/To"
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
         - name: interval
           in: query
           required: true
@@ -74,36 +74,36 @@ paths:
             type: string
           description: Property key to break down by
       responses:
-        "200":
+        '200':
           description: Time-series data
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TimeSeriesResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
+                $ref: '#/components/schemas/TimeSeriesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /v1/funnel:
     post:
       summary: Compute a multi-step funnel
       operationId: funnel
       parameters:
-        - $ref: "#/components/parameters/TenantID"
+        - $ref: '#/components/parameters/TenantID'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/FunnelRequest"
+              $ref: '#/components/schemas/FunnelRequest'
       responses:
-        "200":
+        '200':
           description: Funnel result
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FunnelResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
+                $ref: '#/components/schemas/FunnelResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
 components:
   parameters:
@@ -158,7 +158,7 @@ components:
         series:
           type: array
           items:
-            $ref: "#/components/schemas/TimeSeriesPoint"
+            $ref: '#/components/schemas/TimeSeriesPoint'
 
     FunnelStep:
       type: object
@@ -175,7 +175,7 @@ components:
           type: array
           minItems: 2
           items:
-            $ref: "#/components/schemas/FunnelStep"
+            $ref: '#/components/schemas/FunnelStep'
         from:
           type: string
           format: date-time
@@ -208,7 +208,7 @@ components:
         steps:
           type: array
           items:
-            $ref: "#/components/schemas/FunnelStepResult"
+            $ref: '#/components/schemas/FunnelStepResult'
 
     HealthResponse:
       type: object
@@ -235,10 +235,10 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: '#/components/schemas/ErrorResponse'
     Unauthorized:
       description: Missing or invalid X-Tenant-ID
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: '#/components/schemas/ErrorResponse'

@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	defaultBatchSize      = 1000
-	defaultFlushInterval  = 500 * time.Millisecond
-	blockDuration         = 2 * time.Second
+	defaultBatchSize     = 1000
+	defaultFlushInterval = 500 * time.Millisecond
+	blockDuration        = 2 * time.Second
 )
 
 // StreamConsumer reads from a Redis Stream consumer group and writes to ClickHouse.

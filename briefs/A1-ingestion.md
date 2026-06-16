@@ -7,6 +7,7 @@
 Both services compile, pass healthchecks, and are proven by `make smoke`.
 
 ### Ingest service (`services/ingest`, port 8080)
+
 - `POST /v1/batch` — accepts `{events: CaptureEvent[]}`, validates, generates UUIDv7 `event_id`, pushes to Redis Stream `ingest:stream` as JSON `{data: <StoredEvent JSON>}`.
 - `POST /v1/capture` — single-event convenience endpoint; same pipeline.
 - `GET /health` — returns `{"status":"ok"}`.
@@ -14,6 +15,7 @@ Both services compile, pass healthchecks, and are proven by `make smoke`.
 - No authentication in M1 — A5 will add JWT middleware.
 
 ### Writer service (`services/writer`)
+
 - Reads from `ingest:stream` consumer group `writer-group` via `XREADGROUP`.
 - Batches up to `BATCH_SIZE` events or `FLUSH_INTERVAL_MS` ms, whichever comes first.
 - Writes to ClickHouse table `events` using `clickhouse-go/v2` async insert.
@@ -21,6 +23,7 @@ Both services compile, pass healthchecks, and are proven by `make smoke`.
 - Recovers from `NOGROUP` errors by calling `EnsureGroup` and retrying.
 
 ### SDK (`packages/sdk`)
+
 - `CascadeSDK.init(config)` — sets endpoint, tenant, flushInterval, maxBatchSize.
 - `capture(event, properties)` — buffers events.
 - `flush()` — POSTs to `/v1/batch`.
@@ -30,26 +33,34 @@ Both services compile, pass healthchecks, and are proven by `make smoke`.
 ## Next tasks for A1
 
 ### 1. Structured logging (replace `fmt.Println`)
+
 Both services use bare `fmt.Println`/`fmt.Fprintf`. Add `go.uber.org/zap` per CLAUDE.md conventions:
+
 ```
 go get go.uber.org/zap
 ```
+
 Replace all `fmt.Print*` with `zap.Logger` calls (JSON in production, console in dev based on `LOG_LEVEL`).
 
 ### 2. OTEL tracing stubs
+
 Add `go.opentelemetry.io/otel` spans to ingest handler and writer consumer loop. Export to stdout (OTLP later, handled by A6).
 
 ### 3. Schema validation
+
 The ingest handler currently accepts any JSON. Add validation:
+
 - `event` field required, non-empty string.
 - `timestamp` must parse as RFC3339; if absent, default to server time.
 - `distinct_id` required.
 - `properties` values: stringify non-string types rather than rejecting.
 
 ### 4. Dead-letter handling in writer
+
 If a message fails to parse (malformed JSON), currently it is silently skipped. Log it and write to a `ingest:dlq` stream instead.
 
 ### 5. SDK improvements
+
 - Add `identify(distinctId, traits)` — captures `$identify` event.
 - Add `page()` / `screen()` helpers.
 - Add retry logic on batch POST failure (exponential backoff, max 3).
@@ -57,17 +68,17 @@ If a message fails to parse (malformed JSON), currently it is silently skipped. 
 
 ## Key files
 
-| File | Purpose |
-|---|---|
-| `services/ingest/cmd/main.go` | Entry point, env config |
-| `services/ingest/internal/handler/ingest.go` | HTTP handlers |
-| `services/ingest/internal/schema/event.go` | StoredEvent struct |
-| `services/ingest/internal/tenant/tenant.go` | X-Tenant-ID extraction |
-| `services/writer/cmd/main.go` | Entry point |
-| `services/writer/internal/consumer/stream.go` | Redis consumer loop |
+| File                                            | Purpose                 |
+| ----------------------------------------------- | ----------------------- |
+| `services/ingest/cmd/main.go`                   | Entry point, env config |
+| `services/ingest/internal/handler/ingest.go`    | HTTP handlers           |
+| `services/ingest/internal/schema/event.go`      | StoredEvent struct      |
+| `services/ingest/internal/tenant/tenant.go`     | X-Tenant-ID extraction  |
+| `services/writer/cmd/main.go`                   | Entry point             |
+| `services/writer/internal/consumer/stream.go`   | Redis consumer loop     |
 | `services/writer/internal/writer/clickhouse.go` | ClickHouse batch writer |
-| `packages/sdk/src/index.ts` | JS SDK |
-| `infra/migrations/clickhouse/001_events.sql` | events table DDL |
+| `packages/sdk/src/index.ts`                     | JS SDK                  |
+| `infra/migrations/clickhouse/001_events.sql`    | events table DDL        |
 
 ## Contracts (frozen — do not change without updating PRD §6 + DECISIONS.md)
 
